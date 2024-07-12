@@ -1,2 +1,2 @@
-# SQL
-This is where I post all projects related to SQL
+# SQL Project 1 - Layoffs Dataset
+This project involves comprehensive data cleaning and exploratory data analysis (EDA) on a layoffs dataset. Key tasks included identifying and removing duplicates, standardizing inconsistent data, and handling missing values. The analysis covered layoffs trends by location, industry, company size, and time period, with specific insights into the tech industry and global comparisons. This work provides valuable insights into the patterns and impact of layoffs across various dimensions, making the dataset cleaner and more informative for further analysis or decision-making.
