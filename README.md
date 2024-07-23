@@ -29,8 +29,11 @@ The raw, uncleaned dataset contains about 2000 rows. The grain of the data is ea
 
 ### Task:
 The 2 main tasks of this analysis were:
+
 **1. Clean and preprocess the raw dataset to ensure data quality.**
+
 **2. Conduct Exploratory Data Analysis to answer many questions/queries**
+
 For example:
 - Display the unique locations and their aggregated total layoffs for 2022 and 2023.
 - Show locations with average layoffs greater than the average of all companies.
@@ -46,13 +49,18 @@ For example:
 And more..
 
 ### Action
+
 #### Data Cleaning:
+
 - Since the dataset was raw and would be difficult to draw insights from without cleaning, the data underwent a thorough scrubbing phase. The key steps in this phase included:
+- 
   - **Dropping/Imputing Inconsistent Values:**
     - Correcting spelling errors and standardizing text values for consistency.
     - Handling blanks by either imputing missing values where appropriate or dropping rows/columns that were not critical for the analysis.
+    - 
   - **Handling Duplicates:**
     - Identifying and removing duplicate records to ensure that each observation was unique and representative of actual layoff events.
+    - 
   - **Managing Missing Values:**
     - Assessing the extent and pattern of missing data.
     - Imputing missing values using appropriate statistical methods or domain knowledge.
