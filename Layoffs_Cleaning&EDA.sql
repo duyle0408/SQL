@@ -1,7 +1,7 @@
 ---------------------------------------------------------DATA CLEANING--------------------------------------------------------------------
 
--- Create a backup of the original layoffs table before starting the data cleaning process.
-/*DROP TABLE IF EXISTS LAYOFFS1;
+/*-- Create a backup of the original layoffs table before starting the data cleaning process.
+DROP TABLE IF EXISTS LAYOFFS1;
 
 CREATE TABLE LAYOFFS1 AS
 SELECT
@@ -441,13 +441,13 @@ SELECT DISTINCT
 FROM
 	LAYOFFS1
 WHERE
-	EXTRACT(YEAR FROM DATE) IN (2022, 2023)
+	EXTRACT(YEAR FROM DATE) IN (2022, 2023) AND TOTAL_LAID_OFF IS NOT NULL
 GROUP BY
 	LOCATION
 ORDER BY
 	SUM_LAYOFFS DESC;
 
--- QUERY 2: Display locations with average layoffs greater than the average of all companies using a subquery.
+-- QUERY 2: Display locations with average layoffs greater than the average of all companies
 WITH
     AVG_LAYOFFS_OVERALL AS (
         SELECT
@@ -472,7 +472,11 @@ HAVING
 ORDER BY
     AVG_LAYOFFS_LOCATION DESC;
 
+SELECT * FROM LAYOFFS1 WHERE LOCATION = 'Amsterdam';
+
 -- QUERY 3.1: Retrieve companies with the most and least layoffs in 2023.
+
+-- Create Temp Table to query from
 DROP TABLE IF EXISTS LAYOFFS_23_T;
 
 CREATE TEMP TABLE LAYOFFS_23_T AS
@@ -524,7 +528,7 @@ FROM
 			LAYOFFS_23_T
 	);
 
--- Query 3.2: Create a view to identify companies with 100% layoffs over the last 4 years, categorized into quartiles based on layoff percentage.
+-- Query 3.2: Identify companies with 100% layoffs over the last 4 years, categorized into layoff percentage and calculate percentages for each year
 DROP VIEW IF EXISTS BANKRUPT_COMPANIES;
 
 CREATE VIEW BANKRUPT_COMPANIES AS
@@ -644,26 +648,14 @@ SELECT
 FROM
 	LAYOFFS1
 GROUP BY
-	INDUSTRY
-ORDER BY
-	INDUSTRY ASC;
+	INDUSTRY;
 
 SELECT
 	*
 FROM
-	INDUSTRY_AVERAGE;
-
--- QUERY 4.2: Calculate the percentage difference in average layoffs between 2023 and 2022.
-SELECT
-	INDUSTRY,
-	AVG_LAYOFFS_23,
-	AVG_LAYOFFS_22,
-	ROUND(
-		100 * (AVG_LAYOFFS_23 - AVG_LAYOFFS_22) / AVG_LAYOFFS_22,
-		2
-	) AS DIFFERENCE
-FROM
-	INDUSTRY_AVERAGE;
+	INDUSTRY_AVERAGE
+ORDER BY
+	AVG_LAYOFFS_23 DESC;
 
 -- QUERY 5.1: Count the number of companies with layoffs each month in 2022.
 -- Note: The data for 2023 is only available up to March.
@@ -872,8 +864,6 @@ FROM
 
 -- QUERY 6.1: Compare layoffs in 2023 to those in 2022 for companies in the tech industry.
 -- Note: 'Other' is categorized in place of Tech in the dataset.
--- QUERY 6.1: Compare layoffs in 2023 to those in 2022 for companies in the tech industry.
--- Note: 'Other' is categorized in place of Tech in the dataset.
 WITH TECH_LAYOFFS AS (
     SELECT
         SUM(CASE WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN TOTAL_LAID_OFF ELSE 0 END) AS TOTAL_TECH_LAYOFFS_23,
@@ -967,13 +957,13 @@ WITH
 	)
 SELECT
 	COMPANY_SIZE,
-	AVG(AVG_PCT_LAID_OFF) AS COMPANY_SIZE_LAID_OFF
+	AVG(AVG_PCT_LAID_OFF) AS COMPANY_PCT_LAID_OFF
 FROM
 	COMPANY_FUNDS
 GROUP BY
 	COMPANY_SIZE
 ORDER BY
-	COMPANY_SIZE_LAID_OFF DESC;
+	COMPANY_PCT_LAID_OFF DESC;
 
 -- Comment: Small to medium companies tend to lay off more staff, with small firms cutting off half of their staff on average. 
 -- This might be due to low funding resulting in inadequate budgets for salaries during hardships.
