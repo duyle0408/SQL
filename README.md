@@ -1,5 +1,6 @@
 ## Executive Summary
 
+
 #### Data Dictionary:
 **company**: Name of the company
 
@@ -16,6 +17,7 @@
 **country**: country where the layoff round happened
 
 **funds_raised_millions**: most recent amount of money gained from a funding round (in millions USD)
+
 
 ### Situation:
 In recent years, the job market has experienced significant fluctuations, especially in terms of layoffs across various industries. To better understand these trends and their implications, an analysis was conducted using data from [Kaggle Layoffs Dataset](https://www.kaggle.com/datasets/emaoyeyiola/exploring-the-layoffs-dataset) and related SQL queries.
