@@ -1,13 +1,13 @@
 ---------------------------------------------------------DATA CLEANING--------------------------------------------------------------------
 
 -- Create a backup of the original layoffs table before starting the data cleaning process.
-DROP TABLE IF EXISTS LAYOFFS1;
+/*DROP TABLE IF EXISTS LAYOFFS1;
 
 CREATE TABLE LAYOFFS1 AS
 SELECT
 	*
 FROM
-	LAYOFFS;
+	LAYOFFS;*/
 
 -- Display the structure of the columns to identify which ones need to be converted or cleaned.
 SELECT
@@ -449,29 +449,28 @@ ORDER BY
 
 -- QUERY 2: Display locations with average layoffs greater than the average of all companies using a subquery.
 WITH
-	AVG_LAYOFFS_OVERALL AS (
-		SELECT
-			AVG(TOTAL_LAID_OFF) AS AVG_TOTAL_LAYOFFS
-		FROM
-			LAYOFFS1
-	)
+    AVG_LAYOFFS_OVERALL AS (
+        SELECT
+            AVG(TOTAL_LAID_OFF) AS AVG_TOTAL_LAYOFFS
+        FROM
+            LAYOFFS1
+    )
 SELECT
-	LOCATION,
-	COUNT(LOCATION) AS LOCATION_COUNT,
-	AVG(TOTAL_LAID_OFF) AS AVG_LAYOFFS_LOCATION,
-	AVG_TOTAL_LAYOFFS
+    LOCATION,
+    COUNT(LOCATION) AS LOCATION_COUNT,
+    AVG(TOTAL_LAID_OFF) AS AVG_LAYOFFS_LOCATION,
+    AVG_TOTAL_LAYOFFS
 FROM
-	LAYOFFS1,
-	AVG_LAYOFFS_OVERALL
-WHERE
-	COUNT(LOCATION) > 1
+    LAYOFFS1,
+    AVG_LAYOFFS_OVERALL
 GROUP BY
-	LOCATION,
-	AVG_TOTAL_LAYOFFS
+    LOCATION,
+    AVG_TOTAL_LAYOFFS
 HAVING
-	AVG(TOTAL_LAID_OFF) > AVG_TOTAL_LAYOFFS
+    COUNT(LOCATION) > 1
+    AND AVG(TOTAL_LAID_OFF) > AVG_TOTAL_LAYOFFS
 ORDER BY
-	AVG_LAYOFFS_LOCATION DESC;
+    AVG_LAYOFFS_LOCATION DESC;
 
 -- QUERY 3.1: Retrieve companies with the most and least layoffs in 2023.
 DROP TABLE IF EXISTS LAYOFFS_23_T;
@@ -525,99 +524,96 @@ FROM
 			LAYOFFS_23_T
 	);
 
--- Create a view to identify companies with 100% layoffs over the last 4 years, categorized into quartiles based on layoff percentage.
+-- Query 3.2: Create a view to identify companies with 100% layoffs over the last 4 years, categorized into quartiles based on layoff percentage.
+DROP VIEW IF EXISTS BANKRUPT_COMPANIES;
+
 CREATE VIEW BANKRUPT_COMPANIES AS
 WITH
-	BANKRUPT AS (
-		SELECT
-			COMPANY AS BANKRUPT_COMPANY,
-			DATE AS BANKRUPT_DATE,
-			PCT_QUARTILE
-		FROM
-			(
-				SELECT
-					COMPANY,
-					DATE,
-					PERCENTAGE_LAID_OFF,
-					NTILE(4) OVER (
-						ORDER BY
-							PERCENTAGE_LAID_OFF DESC
-					) AS PCT_QUARTILE
-				FROM
-					LAYOFFS1
-				WHERE
-					PERCENTAGE_LAID_OFF IS NOT NULL
-				ORDER BY
-					PERCENTAGE_LAID_OFF DESC,
-					COMPANY ASC
-			) AS LAID_OFF_QTILE
-		WHERE
-			PERCENTAGE_LAID_OFF = 100.0
-			AND EXTRACT(YEAR FROM DATE) IN (2020, 2021, 2022, 2023)
-		ORDER BY
-			COMPANY ASC
-	)
+    BANKRUPT AS (
+        SELECT
+            COMPANY AS BANKRUPT_COMPANY,
+            DATE AS BANKRUPT_DATE,
+            PCT_QUARTILE
+        FROM
+            (
+                SELECT
+                    COMPANY,
+                    DATE,
+                    PERCENTAGE_LAID_OFF,
+                    NTILE(4) OVER (
+                        ORDER BY
+                            PERCENTAGE_LAID_OFF DESC
+                    ) AS PCT_QUARTILE
+                FROM
+                    LAYOFFS1
+                WHERE
+                    PERCENTAGE_LAID_OFF IS NOT NULL
+                ORDER BY
+                    PERCENTAGE_LAID_OFF DESC,
+                    COMPANY ASC
+            ) AS LAID_OFF_QTILE
+        WHERE
+            PERCENTAGE_LAID_OFF = 100.0
+            AND EXTRACT(YEAR FROM DATE) IN (2020, 2021, 2022, 2023)
+        ORDER BY
+            COMPANY ASC
+    )
 SELECT
-	*
+    *
 FROM
-	BANKRUPT;
+    BANKRUPT;
 
 -- Count the number of companies that went bankrupt each year.
 SELECT
-	COUNT(*)
+    EXTRACT(YEAR FROM BANKRUPT_DATE) AS YEAR,
+    COUNT(*) AS BANKRUPT_COUNT
 FROM
-	BANKRUPT_COMPANIES
-WHERE
-	EXTRACT(YEAR FROM BANKRUPT_DATE) = 2020;
+    BANKRUPT_COMPANIES
+GROUP BY
+    EXTRACT(YEAR FROM BANKRUPT_DATE)
+ORDER BY
+    YEAR;
+
+-- Query 3.3: Calculate percentages for each year
+WITH YEARLY_COUNTS AS (
+    SELECT
+        EXTRACT(YEAR FROM BANKRUPT_DATE) AS YEAR,
+        COUNT(*) AS BANKRUPT_COUNT
+    FROM
+        BANKRUPT_COMPANIES
+    GROUP BY
+        EXTRACT(YEAR FROM BANKRUPT_DATE)
+),
+TOTAL_COUNT AS (
+    SELECT SUM(BANKRUPT_COUNT) AS TOTAL
+    FROM YEARLY_COUNTS
+)
+SELECT
+    YEAR,
+    BANKRUPT_COUNT,
+    ROUND(BANKRUPT_COUNT * 100.0 / TOTAL, 2) AS PERCENTAGE
+FROM
+    YEARLY_COUNTS, TOTAL_COUNT
+ORDER BY
+    YEAR;
 
 -- Comment: 2022 had the highest number of companies with 100% layoffs, classified as bankrupt, with 58 out of 116, making up 50% of the total.
 -- Followed by 2020 with 36 out of 116, roughly 31% of the total.
 
--- QUERY 3.2: Identify companies consistently appearing in the top quartile of layoffs.
-WITH
-	LAYOFF_TREND AS (
-		SELECT
-			COMPANY,
-			TOTAL_LAID_OFF,
-			PERCENTAGE_LAID_OFF,
-			NTILE(4) OVER (
-				ORDER BY
-					PERCENTAGE_LAID_OFF DESC
-			) AS PCT_QUARTILE
-		FROM
-			LAYOFFS1
-		WHERE
-			PERCENTAGE_LAID_OFF IS NOT NULL
-		ORDER BY
-			PERCENTAGE_LAID_OFF DESC,
-			COMPANY ASC
-	),
-	DUPLICATE_COMPANIES AS (
-		SELECT
-			COMPANY,
-			PCT_QUARTILE,
-			ROW_NUMBER() OVER (
-				PARTITION BY
-					COMPANY
-			) AS REPEATED_LAYOFFS
-		FROM
-			LAYOFF_TREND
-		ORDER BY
-			COMPANY ASC
-	)
-SELECT
-	*
-FROM
-	DUPLICATE_COMPANIES
-WHERE
-	REPEATED_LAYOFFS > 1
-ORDER BY
-	REPEATED_LAYOFFS DESC,
-	COMPANY ASC;
 
--- Note: Some major companies like Uber, Loft, and Lyft have had repeated layoffs.
+-- QUERY 3.4: Identify companies that have had multiple rounds of layoffs
+SELECT
+	DISTINCT COMPANY,
+	COUNT(TOTAL_LAID_OFF) COUNT_LAYOFFS
+FROM LAYOFFS1
+GROUP BY COMPANY
+ORDER BY COUNT_LAYOFFS DESC;
+
+-- Note: Some major companies like Loft, Uber and Swiggy have had repeated layoffs.
+
 
 -- QUERY 4.1: Calculate the average number of layoffs by industry for each year from 2020 to 2023.
+DROP TABLE IF EXISTS INDUSTRY_AVERAGE;
 CREATE TEMP TABLE INDUSTRY_AVERAGE AS
 SELECT
 	INDUSTRY,
@@ -876,51 +872,31 @@ FROM
 
 -- QUERY 6.1: Compare layoffs in 2023 to those in 2022 for companies in the tech industry.
 -- Note: 'Other' is categorized in place of Tech in the dataset.
-WITH
-	TECH_LAYOFFS AS (
-		SELECT
-			SUM(
-				CASE
-					WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN TOTAL_LAID_OFF
-					ELSE 0
-				END
-			) AS TOTAL_TECH_LAYOFFS_23,
-						SUM(
-				CASE
-					WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN TOTAL_LAID_OFF
-					ELSE 0
-				END
-			) AS TOTAL_TECH_LAYOFFS_23,
-			SUM(
-				CASE
-					WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN TOTAL_LAID_OFF
-					ELSE 0
-				END
-			) AS TOTAL_TECH_LAYOFFS_22,
-			AVG(
-				CASE
-					WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN PERCENTAGE_LAID_OFF
-					ELSE NULL
-				END
-			) AS AVG_PCT_23,
-			AVG(
-				CASE
-					WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN PERCENTAGE_LAID_OFF
-					ELSE NULL
-				END
-			) AS AVG_PCT_22
-		FROM
-			LAYOFFS1
-		WHERE
-			INDUSTRY = 'Other'
-	)
+-- QUERY 6.1: Compare layoffs in 2023 to those in 2022 for companies in the tech industry.
+-- Note: 'Other' is categorized in place of Tech in the dataset.
+WITH TECH_LAYOFFS AS (
+    SELECT
+        SUM(CASE WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN TOTAL_LAID_OFF ELSE 0 END) AS TOTAL_TECH_LAYOFFS_23,
+        SUM(CASE WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN TOTAL_LAID_OFF ELSE 0 END) AS TOTAL_TECH_LAYOFFS_22,
+        AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN PERCENTAGE_LAID_OFF END) AS AVG_PCT_23,
+        AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN PERCENTAGE_LAID_OFF END) AS AVG_PCT_22
+    FROM LAYOFFS1
+    WHERE INDUSTRY = 'Other'
+)
 SELECT
-	ROUND(
-		100 * (TOTAL_TECH_LAYOFFS_23 - TOTAL_TECH_LAYOFFS_22) / TOTAL_TECH_LAYOFFS_22
-	) AS SUM_DIFF,
-	ROUND(100 * (AVG_PCT_23 - AVG_PCT_22) / AVG_PCT_22, 2) AS AVG_DIFF
-FROM
-	TECH_LAYOFFS;
+    TOTAL_TECH_LAYOFFS_23,
+    TOTAL_TECH_LAYOFFS_22,
+    AVG_PCT_23,
+    AVG_PCT_22,
+    CASE 
+        WHEN TOTAL_TECH_LAYOFFS_22 = 0 THEN NULL
+        ELSE ROUND(100.0 * (TOTAL_TECH_LAYOFFS_23 - TOTAL_TECH_LAYOFFS_22) / TOTAL_TECH_LAYOFFS_22, 2)
+    END AS SUM_DIFF_PERCENT,
+    CASE 
+        WHEN AVG_PCT_22 = 0 THEN NULL
+        ELSE ROUND(100.0 * (AVG_PCT_23 - AVG_PCT_22) / AVG_PCT_22, 2)
+    END AS AVG_DIFF_PERCENT
+FROM TECH_LAYOFFS;
 
 -- Comment: The number of tech layoffs in 2023 is approximately 4.5 times that of 2022, but the average percentage of staff laid off has decreased in 2023.
 
@@ -1001,6 +977,60 @@ ORDER BY
 
 -- Comment: Small to medium companies tend to lay off more staff, with small firms cutting off half of their staff on average. 
 -- This might be due to low funding resulting in inadequate budgets for salaries during hardships.
+
+-- QUERY 9: Are there any industries that seem more resilient to layoffs? Compare the layoff rates across different industries over the years.
+-- Drop the temporary table if it exists
+DROP TABLE IF EXISTS LAYOFFS_INDUSTRIES;
+
+-- Create the temporary table with average percentage layoffs for 2022 and 2023, and the difference
+CREATE TEMP TABLE LAYOFFS_INDUSTRIES AS
+SELECT
+    INDUSTRY,
+    AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN PERCENTAGE_LAID_OFF END) AS AVG_PCT_22,
+    AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN PERCENTAGE_LAID_OFF END) AS AVG_PCT_23,
+    (AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2022 THEN PERCENTAGE_LAID_OFF END)
+     - AVG(CASE WHEN EXTRACT(YEAR FROM DATE) = 2023 THEN PERCENTAGE_LAID_OFF END)) AS DIFFERENCE
+FROM 
+    LAYOFFS1
+GROUP BY
+    INDUSTRY
+ORDER BY
+    AVG_PCT_22 ASC, AVG_PCT_23 ASC;
+
+-- Note: The Sales industry has been extremely resilient to layoffs in both 2022 and 2023. 
+-- Sales layoffs percentage has been kept at around 10% in those two years
+
+-- Query 9.1: Identify industries that have had a decreasing layoffs percentage in 2023 compared to 2022
+SELECT
+    INDUSTRY,
+    AVG_PCT_22,
+    AVG_PCT_23,
+    DIFFERENCE
+FROM
+    LAYOFFS_INDUSTRIES
+WHERE
+    DIFFERENCE > 0
+ORDER BY 
+    DIFFERENCE DESC;
+
+-- Note: The top 3 industries that have slowed down their layoffs within a year includes Legal, Travel and Food
+-- With the most notable difference in Legal going down 33% from 2022 to 2023.
+
+-- Query 9.2: Identify industries that have had an INCREASING layoffs percentage in 2023 compared to 2022
+SELECT
+    INDUSTRY,
+    AVG_PCT_22,
+    AVG_PCT_23,
+    DIFFERENCE
+FROM
+    LAYOFFS_INDUSTRIES
+WHERE
+    DIFFERENCE < 0
+ORDER BY 
+    DIFFERENCE ASC;
+-- Note: On the other hand, the top 3 industries that have increased their layoffs most dramatically within a year includes Transportation, Real Estate and Education
+-- With the most notable difference in Transportation going up 21% from 2022 to 2023.
+
 
 ----------------------------------------------------THE END---------------------------------------------------------------------
 
