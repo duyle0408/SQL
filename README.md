@@ -64,9 +64,7 @@ Example queries included:
 - **Total Layoffs by Country**: The United States had an overwhelming number of layoffs, significantly higher than other countries.
 - **Layoffs by Company Size**: Smaller companies tended to lay off more staff, with small firms cutting off half of their staff on average.
 - **Industry Resilience to Layoffs**: The Sales industry maintained a low layoff percentage, indicating resilience in both 2022 and 2023.
-
   ------------------------------------------------------------ DETAILS -----------------------------------------------------------------------------------
-
 -- Dataset Comprehension:
 ![image](https://github.com/user-attachments/assets/70329bf6-3921-4a95-85f2-7c34a7373c55)
 
