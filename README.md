@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/13033ed4-9b3e-4ea0-ab8a-385bd14300ca)
+![image](https://github.com/user-attachments/assets/acbe3308-24fc-4241-8e17-158c45f210f3)
 
 ## Executive Summary
 
