@@ -2,12 +2,19 @@
 
 #### Data Dictionary:
 **company**: Name of the company
+
 **location**: the city/branch of the company that laid off employees
+
 **industry**: sector which the company operates in
+
 **total_laid_off**: number of employees laid off in that round
+
 **date**: the date the layoff round happened. Time periods span from 2020 to 2023.
+
 **stage**: growth stage of the company
+
 **country**: country where the layoff round happened
+
 **funds_raised_millions**: most recent amount of money gained from a funding round (in millions USD)
 
 ### Situation:
