@@ -1,6 +1,11 @@
+![image](https://github.com/user-attachments/assets/13033ed4-9b3e-4ea0-ab8a-385bd14300ca)
+
 ## Executive Summary
 
 ### Data Dictionary:
+
+Source: [Kaggle Layoffs Dataset](https://www.kaggle.com/datasets/emaoyeyiola/exploring-the-layoffs-dataset)
+
 - **company**: Name of the company
 - **location**: The city/branch of the company that laid off employees
 - **industry**: Sector which the company operates in
